@@ -9,17 +9,6 @@ class FileFinder:
     def __init__(self):
         self.log = logging.getLogger('torrent_recovery.FileFinder')
 
-
-    @staticmethod
-    def find_candidate_files_matching_size(length, dir):
-        list_of_files = []
-        for root, dirs, files in os.walk(dir):
-            for name in files:
-                file_length = os.stat(os.path.join(root, name)).st_size
-                if length == file_length:
-                    list_of_files.append(os.path.join(root, name))
-        return list_of_files
-
     #@timed
     def cache_files_by_size(self, param_dirs):
         self.files_by_size = {}
