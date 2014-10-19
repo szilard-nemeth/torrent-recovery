@@ -8,14 +8,16 @@ from mock import PropertyMock
 class Tree(defaultdict):
     def __init__(self, value=None):
         super(Tree, self).__init__(Tree)
-        self.value = value
+        self.value = []
+        self.size_override_for_files = 0
 
 class MockFs:
     def __init__(self, add_defaults=True):
         self.root = Tree()
         self.last_dir = self.root
-        self.possible_sizes = [12345, 34567, 897654, 67565, 999999]
         self.last_random_sizes_dict = None
+        self.possible_sizes = [12345, 34567, 897654, 67565, 999999]
+        self.make_path_as_sizes_dict_element = MockFs.make_path_subdir_as_root
         if add_defaults:
             self.add_defaults()
 
@@ -31,7 +33,10 @@ class MockFs:
             self.last_dir.value = files
         return self
 
-    def end(self):
+    def end(self, size=0):
+        #add size override for all files in last dir
+        if size > 0:
+            self.last_dir.size_override_for_files = size
         self.last_dir = self.root
 
     def add_defaults(self):
@@ -49,16 +54,19 @@ class MockFs:
     def get_top_level_dirs(self):
         return self.root.keys()
 
-    def get_random_sizes_dict(self):
-        def get_random_sizes_dict_internal(root_dir_name, random_sizes_dict):
+    def get_size_dict(self):
+        def get_size_dict_internal(root_dir_name, random_sizes_dict):
             iter_map = Helper.get_subdict(self.root, root_dir_name)
             nondirs = iter_map.value
             if nondirs:
                 for filename in nondirs:
-                    size = random.choice(self.possible_sizes)
+                    if iter_map.size_override_for_files > 0:
+                        size = iter_map.size_override_for_files
+                    else:
+                        size = random.choice(self.possible_sizes)
                     #TODO just use root dir name without the split
                     #TODO after error is proven (last dir component.join(filename) is not enough
-                    value = os.path.join(os.path.split(root_dir_name)[1], filename)
+                    value = self.make_path_as_sizes_dict_element(root_dir_name, filename)
                     if size in random_sizes_dict:
                         random_sizes_dict[size].append(value)
                     else:
@@ -70,17 +78,27 @@ class MockFs:
                     dirs.append(k)
 
             for dir in dirs:
-                get_random_sizes_dict_internal(os.path.join(root_dir_name, dir), random_sizes_dict)
+                get_size_dict_internal(os.path.join(root_dir_name, dir), random_sizes_dict)
 
         random_sizes_dict = {}
         for dir in self.get_top_level_dirs():
-            get_random_sizes_dict_internal(dir, random_sizes_dict)
+            get_size_dict_internal(dir, random_sizes_dict)
         return random_sizes_dict
 
     def get_last_random_sizes_dict(self):
         if not self.last_random_sizes_dict:
-            self.last_random_sizes_dict = self.get_random_sizes_dict()
+            self.last_random_sizes_dict = self.get_size_dict()
         return self.last_random_sizes_dict
+
+
+    @classmethod
+    def make_path_subdir_as_root(cls, root_dir_name, filename):
+        return os.path.join(os.path.split(root_dir_name)[1], filename)
+
+    @classmethod
+    def make_path_full_path(cls, root_dir_name, filename):
+        return os.path.join(root_dir_name, filename)
+
 
 
 class Helper:

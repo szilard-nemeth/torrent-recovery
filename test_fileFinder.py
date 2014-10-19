@@ -1,4 +1,4 @@
-from unittest import TestCase
+import unittest
 from FileFinder import FileFinder
 from test_mock_file_fs import Tree
 import mock
@@ -14,7 +14,7 @@ import os
 __author__ = 'szyszy'
 
 
-class TestFileFinder(TestCase):
+class TestFileFinder(unittest.TestCase):
 
     @mock.patch('FileFinder.os')
     def test_cache_files_by_size(self, mock_os):
@@ -32,10 +32,11 @@ class TestFileFinder(TestCase):
     @mock.patch('FileFinder.os')
     def test_cache_files_by_size_differentiates_two_same_named_subfolders(self, mock_os):
         fs = MockFs(add_defaults=False)
+        fs.make_path_as_sizes_dict_element = MockFs.make_path_full_path
         MockOsHelper.init(fs, mock_os)
 
-        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end()
-        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end()
+        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end(123456)
+        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end(123456)
 
         dirs = MagicMock()
         dirs.__iter__.return_value = fs.get_top_level_dirs()
