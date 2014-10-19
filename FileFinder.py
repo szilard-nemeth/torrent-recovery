@@ -20,7 +20,7 @@ class FileFinder:
                     list_of_files.append(os.path.join(root, name))
         return list_of_files
 
-    @timed
+    #@timed
     def cache_files_by_size(self, param_dirs):
         self.files_by_size = {}
         for dir in param_dirs:

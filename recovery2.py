@@ -18,7 +18,8 @@ class TorrentRecovery:
         self.dest_dir = dest_dir
         self.torrentfiles_list = FileFinder.find_torrent_files(self.torrentfiles_dir)
         self.log.info('Found %d torrent files in %s', len(self.torrentfiles_list), self.torrentfiles_dir)
-        self.log.debug('torrentfiles: %s', pprint.pformat(self.torrentfiles_list))
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('torrentfiles: %s', pprint.pformat(self.torrentfiles_list))
         self.start()
 
     def start(self):
@@ -38,7 +39,8 @@ class TorrentRecovery:
         torrent_file = open(file, "rb")
         metainfo = bencode.bdecode(torrent_file.read())
         info = metainfo['info']
-        self.log.debug('metainfo: %s', pprint.pformat(info))
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug('metainfo: %s', pprint.pformat(info))
 
         generator = Generator(info, self.fileFinder, self.media_dirs, self.dest_dir)
         pieces = StringIO.StringIO(info['pieces'])
@@ -88,11 +90,14 @@ class TorrentRecovery:
         argsDict = vars(args)
         ##deletes null keys
         argsDict = dict((k, v) for k, v in argsDict.items() if v)
-        log.info("args dict: %s", pprint.pformat(argsDict))
+        if log.isEnabledFor(logging.DEBUG):
+            log.info("args dict: %s", pprint.pformat(argsDict))
         return argsDict
 
     @staticmethod
     def init_logger(verbose):
+        #TODO use dictConfig instead
+        #https://docs.python.org/2/library/logging.config.html#logging-config-api
         #FORMAT = '%(asctime)-15s   %(message)s'
         #logging.basicConfig(format=FORMAT, level=logging.DEBUG)
         logger = logging.getLogger('torrent_recovery')

@@ -146,6 +146,8 @@ class Generator:
 
 
                 for idx, candidate in enumerate(candidates):
+                    #TODO  use with open('workfile', 'r') as f:
+                    #https://docs.python.org/2/tutorial/inputoutput.html#methods-of-file-objects
                     sfile = open(candidate.decode('UTF-8'), "rb")
                     self.last_file_marker = self.actual_pos
                     self.new_candidate = True
