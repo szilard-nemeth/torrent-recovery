@@ -15,9 +15,9 @@ class MockFs:
     def __init__(self, add_defaults=True):
         self.root = Tree()
         self.last_dir = self.root
-        self.last_random_sizes_dict = None
+        self.last_sizes_dict = None
         self.possible_sizes = [12345, 34567, 897654, 67565, 999999]
-        self.make_path_as_sizes_dict_element = MockFs.make_path_subdir_as_root
+        self.make_path_as_sizes_dict_element = MockFs.make_path_full_path
         if add_defaults:
             self.add_defaults()
 
@@ -55,7 +55,7 @@ class MockFs:
         return self.root.keys()
 
     def get_size_dict(self):
-        def get_size_dict_internal(root_dir_name, random_sizes_dict):
+        def get_size_dict_internal(root_dir_name, sizes_dict):
             iter_map = Helper.get_subdict(self.root, root_dir_name)
             nondirs = iter_map.value
             if nondirs:
@@ -64,13 +64,11 @@ class MockFs:
                         size = iter_map.size_override_for_files
                     else:
                         size = random.choice(self.possible_sizes)
-                    #TODO just use root dir name without the split
-                    #TODO after error is proven (last dir component.join(filename) is not enough
                     value = self.make_path_as_sizes_dict_element(root_dir_name, filename)
-                    if size in random_sizes_dict:
-                        random_sizes_dict[size].append(value)
+                    if size in sizes_dict:
+                        sizes_dict[size].append(value)
                     else:
-                        random_sizes_dict[size] = [value]
+                        sizes_dict[size] = [value]
 
             dirs = []
             for k, v in iter_map.iteritems():
@@ -78,17 +76,17 @@ class MockFs:
                     dirs.append(k)
 
             for dir in dirs:
-                get_size_dict_internal(os.path.join(root_dir_name, dir), random_sizes_dict)
+                get_size_dict_internal(os.path.join(root_dir_name, dir), sizes_dict)
 
-        random_sizes_dict = {}
+        sizes_dict = {}
         for dir in self.get_top_level_dirs():
-            get_size_dict_internal(dir, random_sizes_dict)
-        return random_sizes_dict
+            get_size_dict_internal(dir, sizes_dict)
+        return sizes_dict
 
-    def get_last_random_sizes_dict(self):
-        if not self.last_random_sizes_dict:
-            self.last_random_sizes_dict = self.get_size_dict()
-        return self.last_random_sizes_dict
+    def get_last_sizes_dict(self):
+        if not self.last_sizes_dict:
+            self.last_sizes_dict = self.get_size_dict()
+        return self.last_sizes_dict
 
 
     @classmethod
@@ -123,13 +121,20 @@ class MockOsHelper:
     def init(cls, param_fs, mock_os):
         cls.fs = param_fs
         cls.mock_os = mock_os
+        cls.walk_stack = []
         mock_os.walk.side_effect = MockOsHelper.os_walk_side_effect
         mock_os.stat.side_effect = MockOsHelper.os_stat_side_effect
         mock_os.path.join.side_effect = MockOsHelper.os_path_join_side_effect
+        mock_os.path.abspath.side_effect = MockOsHelper.os_path_abspath_side_effect
 
     @staticmethod
     def os_walk_side_effect(*args, **kwargs):
         root_dir_name = args[0]
+        #append the dir name if it's a root, delete the old root if needed
+        if os.sep not in root_dir_name:
+            if len(MockOsHelper.walk_stack) == 1:
+                MockOsHelper.walk_stack.pop()
+            MockOsHelper.walk_stack.append(root_dir_name)
         iter_map = Helper.get_subdict(MockOsHelper.fs.root, root_dir_name)
         nondirs = iter_map.value
         dirs = []
@@ -139,20 +144,40 @@ class MockOsHelper:
         yield os.path.split(root_dir_name)[1], dirs, nondirs
 
         for dir in dirs:
+            MockOsHelper.walk_stack.append(dir)
             for x in MockOsHelper.os_walk_side_effect(os.path.join(root_dir_name, dir)):
                 yield x
+            #pop from the stack when iteration is finished for the current dir
+            MockOsHelper.walk_stack.pop()
+
+
 
     @staticmethod
     def os_stat_side_effect(*args, **kwargs):
-        size_dict = MockOsHelper.fs.get_last_random_sizes_dict()
+        size_dict = MockOsHelper.fs.get_last_sizes_dict()
         path = args[0]
         for size, paths in size_dict.iteritems():
             if path in paths:
                 type(MockOsHelper.mock_os.stat).st_size = PropertyMock(return_value=size)
                 return MockOsHelper.mock_os.stat
         # if none of the list contained the path, something is wrong with the test
-        raise RuntimeError('Path ' + path + ' not found in any of the predefined lists')
+        raise RuntimeError('Path ' + path + ' not found in the size_dict')
 
     @staticmethod
     def os_path_join_side_effect(*args, **kwargs):
         return os.path.join(*args, **kwargs)
+
+    @staticmethod
+    def os_path_abspath_side_effect(*args, **kwargs):
+        if len(MockOsHelper.walk_stack) == 0:
+            return args[0]
+        ##if we are on level 1, we can skip the base dir because args[0] contains it (base\filename)
+        if len(MockOsHelper.walk_stack) == 1:
+            return args[0]
+        ##if we are on level 1+n, we can skip the last part because args[0] contains it (base\filename)
+        elif len(MockOsHelper.walk_stack) >= 2:
+            stack_size = len(MockOsHelper.walk_stack)
+            elements = MockOsHelper.walk_stack[1:stack_size - 1]
+            elements.append(args[0])
+            return os.path.join(MockOsHelper.walk_stack[0], *elements)
+

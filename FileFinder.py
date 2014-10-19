@@ -4,8 +4,8 @@ import os
 import logging
 from timed_wrapper import timed
 
-class FileFinder:
 
+class FileFinder:
     def __init__(self):
         self.log = logging.getLogger('torrent_recovery.FileFinder')
 
@@ -27,7 +27,7 @@ class FileFinder:
             self.log.info('caching: %s', dir)
             for root, dirs, files in os.walk(dir):
                 for name in files:
-                    filename = os.path.join(root, name)
+                    filename = os.path.abspath(os.path.join(root, name))
                     file_length = os.stat(filename).st_size
                     if file_length in self.files_by_size:
                         self.files_by_size[file_length].append(filename)
