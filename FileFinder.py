@@ -26,6 +26,7 @@ class FileFinder:
     def find_candidate_files_matching_size_from_cache(self, length):
         if length in self.files_by_size:
             return self.files_by_size[length]
+            #TODO check that what changes if sort is on
             #return sorted(self.files_by_size[length])
         else:
             return []
