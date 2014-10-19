@@ -29,4 +29,18 @@ class TestFileFinder(TestCase):
 
         self.assertDictEqual(fs.get_last_random_sizes_dict(), filefinder.files_by_size)
 
+    @mock.patch('FileFinder.os')
+    def test_cache_files_by_size_differentiates_two_same_named_subfolders(self, mock_os):
+        fs = MockFs(add_defaults=False)
+        MockOsHelper.init(fs, mock_os)
 
+        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end()
+        fs.add_dir('a').add_dir('b1').add_files(['a.b1.f1']).end()
+
+        dirs = MagicMock()
+        dirs.__iter__.return_value = fs.get_top_level_dirs()
+
+        filefinder = FileFinder()
+        filefinder.cache_files_by_size(dirs)
+
+        self.assertDictEqual(fs.get_last_random_sizes_dict(), filefinder.files_by_size)
