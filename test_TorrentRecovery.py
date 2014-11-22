@@ -85,7 +85,7 @@ class TestTorrentRecovery(unittest.TestCase):
         self.mock_fs_helper.add_dir('c').add_dir('c1').add_files(['c.c1.f1.nfo', 'c.c1.f2.txt']).end(12)
         self.mock_fs_helper.cache_in_filefinder()
 
-        paths = [self.PathAndLength('path1', 123454), self.PathAndLength('path2', 123455), self.PathAndLength('path.txt',12), self.PathAndLength('path.nfo', 12)]
+        paths = [self.PathAndLength('path1', 123454), self.PathAndLength('path2', 123455), self.PathAndLength('path.txt', 12), self.PathAndLength('path.nfo', 12)]
         mock_torrent = MockTorrentFile('name', paths, 1234567)
 
         generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, None, None)

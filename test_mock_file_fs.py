@@ -126,6 +126,7 @@ class MockOs:
         mock_os.stat.side_effect = MockOs.os_stat_side_effect
         mock_os.path.join.side_effect = MockOs.os_path_join_side_effect
         mock_os.path.abspath.side_effect = MockOs.os_path_abspath_side_effect
+        mock_os.path.splitext.side_effect = MockOs.os_path_splitext_side_effect
 
     @staticmethod
     def os_walk_side_effect(*args, **kwargs):
@@ -166,6 +167,10 @@ class MockOs:
     @staticmethod
     def os_path_join_side_effect(*args, **kwargs):
         return os.path.join(*args, **kwargs)
+
+    @staticmethod
+    def os_path_splitext_side_effect(*args):
+        return os.path.splitext(*args)
 
     @staticmethod
     def os_path_abspath_side_effect(*args, **kwargs):

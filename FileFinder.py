@@ -7,11 +7,11 @@ from timed_wrapper import timed
 
 class FileFinder:
     def __init__(self):
+        self.files_by_size = {}
         self.log = logging.getLogger('torrent_recovery.FileFinder')
 
-    #@timed
+    # @timed
     def cache_files_by_size(self, param_dirs):
-        self.files_by_size = {}
         for dir in param_dirs:
             self.log.info('caching: %s', dir)
             for root, dirs, files in os.walk(dir):
@@ -26,8 +26,8 @@ class FileFinder:
     def find_candidate_files_matching_size_from_cache(self, length):
         if length in self.files_by_size:
             return self.files_by_size[length]
-            #TODO check that what changes if sort is on
-            #return sorted(self.files_by_size[length])
+            # TODO check that what changes if sort is on
+            # return sorted(self.files_by_size[length])
         else:
             return []
 
@@ -39,3 +39,30 @@ class FileFinder:
                 if name.endswith(".torrent"):
                     list_of_files.append(os.path.join(root, name))
         return list_of_files
+
+
+    def find_candidates_for_all_files(self, metainfo, exts_to_skip):
+        candidates_map = {}
+        if 'files' in metainfo:
+            piece = ""
+            for file_info in metainfo['files']:
+                extension = os.path.splitext(file_info['path'][0])[1]
+                if extension[:1] == '.': extension = extension[1:]
+                if extension in exts_to_skip:
+                    continue
+
+                length = file_info['length']
+                candidates = self.find_candidate_files_matching_size_from_cache(length)
+                candidates_map[file_info['path'][0]] = candidates
+
+                if len(candidates_map[file_info['path'][0]]) == 0:
+                    self.log.warning('NO candidates for %s!', file_info['path'][0])
+                elif len(candidates_map[file_info['path'][0]]) > 1:
+                    self.log.warning('multiple candidates for %s!', file_info['path'][0])
+                    self.log.warning(candidates_map[file_info['path'][0]])
+
+        else:
+            length = metainfo['length']
+            candidates = self.find_candidate_files_matching_size_from_cache(length)
+            candidates_map[metainfo['name']] = candidates
+        return candidates_map

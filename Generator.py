@@ -5,10 +5,11 @@ import StringIO
 import logging
 from FileFinder import FileFinder
 
+
 class Generator:
-    def __init__(self, metainfo, fileFinder, media_dirs, dest_dir):
+    def __init__(self, metainfo, filefinder, media_dirs, dest_dir):
         self.log = logging.getLogger('torrent_recovery.generator')
-        self.fileFinder = fileFinder
+        self.fileFinder = filefinder
         self.metainfo = metainfo
         self.media_dirs = media_dirs
         self.dest_dir = dest_dir
@@ -20,13 +21,12 @@ class Generator:
 
         self.exts_to_skip = ['sfv', 'nfo', 'm3u', 'jpg', 'jpeg', 'txt']
 
-        self.candidates = self.find_candidates_for_all_files()
+        self.candidates = self.fileFinder.find_candidates_for_all_files(self.metainfo, self.exts_to_skip)
         self.offsets = self.determine_offsets()
         self.last_skipped_number_of_pieces = 0
         self.actual_pos = 0
         self.last_file_marker = 0
         self.new_candidate = False
-
 
 
     def determine_offsets(self):
@@ -57,41 +57,14 @@ class Generator:
                         tmp_end = 0
                 running_sum += length
 
-            ##could miss if the last files were unwanted! (does not go into else)
+            # #could miss if the last files were unwanted! (does not go into else)
             if tmp_end > 0:
                 offsets.append((tmp_start, tmp_end))
 
         return offsets
 
 
-    def find_candidates_for_all_files(self):
-        candidates_map = {}
-        if 'files' in self.metainfo:
-            piece = ""
-            for file_info in self.metainfo['files']:
 
-                extension = os.path.splitext(file_info['path'][0])[1]
-                if extension[:1] == '.': extension = extension[1:]
-                if extension in self.exts_to_skip:
-                    continue
-
-                length = file_info['length']
-                candidates = self.fileFinder.find_candidate_files_matching_size_from_cache(length)
-                candidates_map[file_info['path'][0]] = candidates
-
-
-                if len(candidates_map[file_info['path'][0]]) == 0:
-                    self.log.warning('NO candidates for %s!', file_info['path'][0])
-                elif len(candidates_map[file_info['path'][0]]) > 1:
-                    self.log.warning('multiple candidates for %s!', file_info['path'][0])
-                    self.log.warning(candidates_map[file_info['path'][0]])
-
-
-        else:
-            length = self.metainfo['length']
-            candidates = self.fileFinder.find_candidate_files_matching_size_from_cache(length)
-            candidates_map[self.metainfo['name']] = candidates
-        return candidates_map
 
 
     def pieces_generator(self):
@@ -99,7 +72,7 @@ class Generator:
         if 'files' in self.metainfo:  # yield pieces from a multi-file torrent
             piece = ""
             last_valid_file_piece = (0, "")
-            #TODO filter it before processing!
+            # TODO filter it before processing!
             for file_idx, file_info in enumerate(self.metainfo['files']):
                 extension = os.path.splitext(file_info['path'][0])[1]
                 if extension[:1] == '.': extension = extension[1:]
@@ -113,7 +86,6 @@ class Generator:
                     self.compute_seek(self.actual_pos, length)
                     self.actual_pos += length
                     self.last_file_marker += length
-
 
                 for idx, candidate in enumerate(candidates):
                     #TODO  use with open('workfile', 'r') as f:
@@ -159,7 +131,8 @@ class Generator:
                             self.actual_pos += would_read
                         else:
                             self.actual_pos += len(piece)
-                        self.log.debug('increased actual pos: %d --> %d (+ %d) ', tmp_actual_pos, self.actual_pos, self.actual_pos - tmp_actual_pos)
+                        self.log.debug('increased actual pos: %d --> %d (+ %d) ', tmp_actual_pos, self.actual_pos,
+                                       self.actual_pos - tmp_actual_pos)
 
                         #this marks the end of file is reached
                         if len(piece) != self.piece_length:
