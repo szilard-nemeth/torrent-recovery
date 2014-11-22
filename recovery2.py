@@ -9,8 +9,8 @@ import logging
 from FileFinder import FileFinder
 from Generator import Generator
 
-class TorrentRecovery:
 
+class TorrentRecovery:
     def __init__(self, media_dirs, torrentfiles_dir, dest_dir):
         self.log = logging.getLogger('torrent_recovery')
         self.media_dirs = media_dirs
@@ -35,7 +35,7 @@ class TorrentRecovery:
             self.log.info('===============================================')
 
     def open_torrentfile(self, file):
-        #Open torrent file
+        # Open torrent file
         torrent_file = open(file, "rb")
         metainfo = bencode.bdecode(torrent_file.read())
         info = metainfo['info']
@@ -74,11 +74,11 @@ class TorrentRecovery:
                             dest='verbose', default=None, required=False,
                             help='more verbose log')
         parser.add_argument('--media_dirs', type=check_file, required=True, nargs='+',
-                           help='list of dirs where media is')
+                            help='list of dirs where media is')
         parser.add_argument('--torrent_files_dir', type=check_file, required=True,
-                           help='a dir where torrentfiles are')
+                            help='a dir where torrentfiles are')
         parser.add_argument('--destination_dir', type=check_file, required=True,
-                           help='a dir where the moved data will reside')
+                            help='a dir where the moved data will reside')
         return parser
 
     @staticmethod
@@ -88,7 +88,7 @@ class TorrentRecovery:
         log.debug(args)
 
         argsDict = vars(args)
-        ##deletes null keys
+        # #deletes null keys
         argsDict = dict((k, v) for k, v in argsDict.items() if v)
         if log.isEnabledFor(logging.DEBUG):
             log.info("args dict: %s", pprint.pformat(argsDict))
@@ -96,7 +96,7 @@ class TorrentRecovery:
 
     @staticmethod
     def init_logger(verbose):
-        #TODO use dictConfig instead
+        # TODO use dictConfig instead
         #https://docs.python.org/2/library/logging.config.html#logging-config-api
         #FORMAT = '%(asctime)-15s   %(message)s'
         #logging.basicConfig(format=FORMAT, level=logging.DEBUG)
@@ -118,10 +118,12 @@ class TorrentRecovery:
         logger.addHandler(fh)
         logger.addHandler(ch)
 
+
 def check_file(file):
-        if not os.path.exists(file):
-            raise argparse.ArgumentError("{0} does not exist".format(file))
-        return file
+    if not os.path.exists(file):
+        raise argparse.ArgumentError("{0} does not exist".format(file))
+    return file
+
 
 def main():
     arg_parser = TorrentRecovery.setup_parser()
@@ -133,6 +135,7 @@ def main():
     torrentfiles_dir = argsDict['torrent_files_dir']
     destination_dir = argsDict['destination_dir']
     recovery = TorrentRecovery(media_dirs, torrentfiles_dir, destination_dir)
+
 
 if __name__ == "__main__":
     main()
