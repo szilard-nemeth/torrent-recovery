@@ -24,3 +24,6 @@ class MockFsHelper:
         dirs = MagicMock()
         dirs.__iter__.return_value = self.fs.get_top_level_dirs()
         self.filefinder.cache_files_by_size(dirs)
+
+    def get_last_sizes_dict(self):
+        return self.fs.get_last_sizes_dict()

@@ -29,8 +29,9 @@ __author__ = 'szyszy'
 #  'pieces': '\xae\xfa\x1a4t\x83\xf8=S"E"\xefa\x19\xb8#\x94\xf8p\x8e(bW@@>\xbb\xc1<\.......
 #  'private': 1}
 class MockTorrentFile:
-    def __init__(self, name, filenames_and_lengths, piece_length):
+    def __init__(self, name, filenames_and_lengths, piece_length, mock_fs=None):
         self.meta_info = self.create_meta_info(name, filenames_and_lengths, piece_length)
+        self.mock_fs = mock_fs
 
     def create_meta_info(self, name, filenames_and_lengths, piece_length):
         result = dict()
@@ -50,4 +51,4 @@ class MockTorrentFile:
         return result
 
     def generate_pieces(self):
-        return None
+        pass
