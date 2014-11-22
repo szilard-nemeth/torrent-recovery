@@ -4,6 +4,7 @@ import os
 import StringIO
 import logging
 from FileFinder import FileFinder
+from FileOffset import FileOffset
 
 
 class Generator:
@@ -22,48 +23,11 @@ class Generator:
         self.exts_to_skip = ['sfv', 'nfo', 'm3u', 'jpg', 'jpeg', 'txt']
 
         self.candidates = self.fileFinder.find_candidates_for_all_files(self.metainfo, self.exts_to_skip)
-        self.offsets = self.determine_offsets()
+        self.offsets = FileOffset.determine_offsets(self.metainfo, self.candidates, self.exts_to_skip)
         self.last_skipped_number_of_pieces = 0
         self.actual_pos = 0
         self.last_file_marker = 0
         self.new_candidate = False
-
-
-    def determine_offsets(self):
-        ongoing = False
-        running_sum = 0
-        tmp_start = 0
-        tmp_end = 0
-        offsets = []
-        if 'files' in self.metainfo:
-            for file_info in self.metainfo['files']:
-                length = file_info['length']
-
-                extension = os.path.splitext(file_info['path'][0])[1]
-                if extension[:1] == '.': extension = extension[1:]
-
-                if extension in self.exts_to_skip or len(self.candidates[file_info['path'][0]]) == 0:
-                    if not ongoing:
-                        ongoing = True
-                        tmp_start = running_sum
-                        tmp_end = tmp_start + length
-                    else:
-                        tmp_end += length
-                else:
-                    if ongoing:
-                        ongoing = False
-                        offsets.append((tmp_start, tmp_end))
-                        tmp_start = 0
-                        tmp_end = 0
-                running_sum += length
-
-            # #could miss if the last files were unwanted! (does not go into else)
-            if tmp_end > 0:
-                offsets.append((tmp_start, tmp_end))
-
-        return offsets
-
-
 
 
 
