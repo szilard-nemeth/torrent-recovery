@@ -16,6 +16,9 @@ from TestHelper import MockFsHelper
 import sys
 
 PIECE_LENGTH = 2500
+DUMMY_DEST_DIR = 'dummy_dest_dir'
+DUMMY_MEDIA_DIR = 'dummy_media_dir'
+OPEN_MOCK = mock.MagicMock(spec=open, side_effect=MockFileStore.open_side_effect)
 
 class TestTorrentRecovery(unittest.TestCase):
 
@@ -116,3 +119,29 @@ class TestTorrentRecovery(unittest.TestCase):
 
         self.assertEqual(sum(lengths), generator.actual_pos)
         self.assertEqual(sum(lengths), generator.last_file_marker)
+
+    @mock.patch('FileFinder.os')
+    def test_generate_random_data(self, mock_os):
+        lengths = [123454, 123789]
+        self.mock_fs_helper = MockFsHelper(mock_os)
+        self.mock_fs_helper.add_dir('a').add_dir('b1').add_files(['a.b1.f1', 'a.b1.f2']).end(lengths[0])
+        self.mock_fs_helper.add_dir('b').add_dir('b1').add_files(['a.b1.f1']).end(lengths[1])
+        self.mock_fs_helper.add_dir('c').add_dir('c1').add_files(['c.c1.f1.nfo', 'c.c1.f2.txt']).end(12)
+        self.mock_fs_helper.cache_in_filefinder()
+        paths = [self.PathAndLength('path1', lengths[0]), self.PathAndLength('path2', lengths[1])]
+        mock_torrent = MockTorrentFile('name', paths, PIECE_LENGTH)
+
+        valid_files = {'path1': [MockFile(os.path.join('a', 'b1', 'a.b1.f1'))]
+            , 'path2': [MockFile(os.path.join('b', 'b1', 'a.b1.f1'))]}
+        content_manager = ContentManager(self.mock_fs_helper, valid_files)
+        generator_module = sys.modules[Generator.__module__]
+        with patch.object(generator_module, 'open', OPEN_MOCK, create=True):
+            generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, DUMMY_MEDIA_DIR,
+                                  DUMMY_DEST_DIR)
+
+            numbered = enumerate(generator.pieces_generator())
+            for i, piece in numbered:
+                pass
+
+            self.assertEqual(sum(lengths), generator.actual_pos)
+            self.assertEqual(123454, generator.last_file_marker)
