@@ -1,7 +1,8 @@
 import mock
+
 from Generator import Generator
 from test_mock_file import MockFile, ContentManager, MockFileStore
-from test_mock_file_fs import MockOs
+
 
 __author__ = 'szyszy'
 import unittest

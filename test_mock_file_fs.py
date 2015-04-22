@@ -139,7 +139,7 @@ class MockOs:
         iter_map = Helper.get_subdict(MockOs.fs.root, root_dir_name)
         nondirs = iter_map.value
         dirs = []
-        for k, v in iter_map.iteritems():
+        for k, v in iter_map.items():
             if isinstance(v, dict):
                 dirs.append(k)
         yield os.path.split(root_dir_name)[1], dirs, nondirs
