@@ -12,8 +12,8 @@ from collections import namedtuple
 from mock import patch
 
 from recovery2 import TorrentRecovery
-from test.test_mock_torrent_file import MockTorrentFile
-from test.TestHelper import MockFsHelper
+from test.testhelpers.test_mock_torrent_file import MockTorrentFile
+from test.testhelpers.TestHelper import MockFsHelper
 import sys
 
 PIECE_LENGTH = 2500

@@ -2,8 +2,8 @@ from collections import namedtuple
 
 import mock
 
-from test.TestHelper import MockFsHelper
-from test.test_mock_torrent_file import MockTorrentFile
+from test.testhelpers.TestHelper import MockFsHelper
+from test.testhelpers.test_mock_torrent_file import MockTorrentFile
 from recovery2 import Generator
 
 __author__ = 'szyszy'

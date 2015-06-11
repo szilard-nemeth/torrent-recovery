@@ -2,8 +2,9 @@ __author__ = 'szyszy'
 
 from mock import MagicMock
 
-from test.test_mock_file_fs import MockFs
-from test.test_mock_file_fs import MockOs
+from test.testhelpers.test_mock_file_fs import MockFs
+
+from test.testhelpers.test_mock_file_fs import MockOs
 from FileFinder import FileFinder
 
 
