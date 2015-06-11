@@ -2,7 +2,6 @@ import unittest
 import os
 
 from testfixtures import tempdir
-
 from FileFinder import FileFinder
 
 
