@@ -1,8 +1,11 @@
 from collections import namedtuple
+
 import mock
-from TestHelper import MockFsHelper
-from test_mock_torrent_file import MockTorrentFile
+
+from test.TestHelper import MockFsHelper
+from test.test_mock_torrent_file import MockTorrentFile
 from recovery2 import Generator
+
 __author__ = 'szyszy'
 
 import unittest

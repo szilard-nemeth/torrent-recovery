@@ -1,19 +1,12 @@
 import unittest
-from FileFinder import FileFinder
-from test_mock_file_fs import Tree
-import mock
-from mock import MagicMock
-from mock import Mock
-from mock import PropertyMock
-from mock import patch
-from test_mock_file_fs import Helper
-from test_mock_file_fs import MockFs
-from test_mock_file_fs import MockOs
 import os
+
+import mock
+
 
 __author__ = 'szyszy'
 
-from TestHelper import MockFsHelper
+from test.TestHelper import MockFsHelper
 class TestFileFinder(unittest.TestCase):
 
     @mock.patch('FileFinder.os')
