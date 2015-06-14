@@ -68,16 +68,16 @@ class TestTorrentRecovery(unittest.TestCase):
     def setUp(self):
         self.PathAndLength = namedtuple('PathAndLength', 'path length')
 
-        temp_dir = TempDirectory()
-        self.temp_dir_path = temp_dir.path
-        temp_dir.write('a/b1/a.b1.f1', ContentManager.generate_random_binary(123454).getvalue())
-        temp_dir.write('a/b1/a.b1.f2', ContentManager.generate_random_binary(123454).getvalue())
-        temp_dir.write('b/b2/b.b2.f1', ContentManager.generate_random_binary(123455).getvalue())
+        self.temp_dir = TempDirectory()
+        self.temp_dir_path = self.temp_dir.path
+        self.temp_dir.write('a/b1/a.b1.f1', ContentManager.generate_random_binary(123454).getvalue())
+        self.temp_dir.write('a/b1/a.b1.f2', ContentManager.generate_random_binary(123454).getvalue())
+        self.temp_dir.write('b/b2/b.b2.f1', ContentManager.generate_random_binary(123455).getvalue())
         self.file_finder = FileFinder()
-        self.file_finder.cache_files_by_size([temp_dir.path])
+        self.file_finder.cache_files_by_size([self.temp_dir.path])
 
     def tearDown(self):
-        pass
+        self.temp_dir.cleanup()
 
     def test_find_candidates_for_all_files(self):
         paths = [self.PathAndLength('path1', 123454), self.PathAndLength('path2', 123455)]
