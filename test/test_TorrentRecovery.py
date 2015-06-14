@@ -3,7 +3,7 @@ from testfixtures import tempdir, TempDirectory
 
 from FileFinder import FileFinder
 from Generator import Generator
-from test.testhelpers.test_mock_file import ContentManager
+from test.testhelpers.content_manager import ContentManager
 
 
 __author__ = 'szyszy'
@@ -14,7 +14,7 @@ from collections import namedtuple
 from mock import patch
 
 from recovery2 import TorrentRecovery
-from test.testhelpers.test_mock_torrent_file import MockTorrentFile
+from test.testhelpers.mock_torrent_file import MockTorrentFile
 import sys
 
 PIECE_LENGTH = 2500

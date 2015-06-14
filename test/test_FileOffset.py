@@ -1,8 +1,8 @@
 from collections import namedtuple
 from testfixtures import tempdir
 from FileFinder import FileFinder
-from test.testhelpers.test_mock_file import ContentManager
-from test.testhelpers.test_mock_torrent_file import MockTorrentFile
+from test.testhelpers.content_manager import ContentManager
+from test.testhelpers.mock_torrent_file import MockTorrentFile
 from recovery2 import Generator
 
 __author__ = 'szyszy'
