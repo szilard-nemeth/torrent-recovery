@@ -20,45 +20,8 @@ class ContentManager:
                 for size, real_paths in sizes_dict.iteritems():
                     if mockfile.path in real_paths:
                         mockfile.data = self.generate_random_binary(size)
-                        MockFileStore.register(mockfile)
+                        #MockFileStore.register(mockfile)
 
     @staticmethod
     def generate_random_binary(length):
         return StringIO(os.urandom(length))
-
-
-class MockFile:
-    def __init__(self, path):
-        self.closed = False
-        self.path = path
-
-    # seek, read, close
-    def seek(self, offset):
-        self.data.seek(offset)
-        print 'seeked to ' + str(self.data.tell())
-
-    def read(self, size):
-        chunk = self.data.read(size)
-        print 'read until ' + str(self.data.tell())
-        return chunk
-
-    def close(self):
-        self.closed = True
-
-
-
-class MockFileStore:
-    mocks = {}
-
-    @staticmethod
-    def deinit():
-        MockFileStore.mocks = {}
-
-    @staticmethod
-    def register(mockfile):
-        MockFileStore.mocks[mockfile.path] = mockfile
-
-    @staticmethod
-    def open_side_effect(*args, **kwargs):
-        path = args[0]
-        return MockFileStore.mocks[path]

@@ -32,7 +32,7 @@ class Generator:
 
 
     def pieces_generator(self):
-        """Yield pieces from download file(s)."""
+        """Yield pieces from downloaded file(s)."""
         if 'files' in self.metainfo:  # yield pieces from a multi-file torrent
             piece = ""
             last_valid_file_piece = (0, "")

@@ -1,7 +1,9 @@
 import mock
+from testfixtures import tempdir, TempDirectory
 
+from FileFinder import FileFinder
 from Generator import Generator
-from test_mock_file import MockFile, ContentManager, MockFileStore
+from test.testhelpers.test_mock_file import ContentManager
 
 
 __author__ = 'szyszy'
@@ -13,21 +15,19 @@ from mock import patch
 
 from recovery2 import TorrentRecovery
 from test.testhelpers.test_mock_torrent_file import MockTorrentFile
-from test.testhelpers.TestHelper import MockFsHelper
 import sys
 
 PIECE_LENGTH = 2500
 DUMMY_DEST_DIR = 'dummy_dest_dir'
 DUMMY_MEDIA_DIR = 'dummy_media_dir'
-OPEN_MOCK = mock.MagicMock(spec=open, side_effect=MockFileStore.open_side_effect)
+
 
 class TestTorrentRecovery(unittest.TestCase):
-
     def setUp(self):
         parser = TorrentRecovery.setup_parser()
         self.args_dict = TorrentRecovery.create_args_dict(parser)
 
-        ###open_torrentfile tests
+        # ##open_torrentfile tests
         ## testcase: skip the loop if torrent corrupted
         ## testcase: seeks back to last file pos if piece_hash doesn't match
 
@@ -57,7 +57,7 @@ class TestTorrentRecovery(unittest.TestCase):
         ## TC: always compute seek while processing candidates
         ## TC: storing last valid file piece in case of we're at the end of the file
 
-    #def test_does_not_process_files_should_skip(self):
+    # def test_does_not_process_files_should_skip(self):
 
 
     ###GENERATOR, find_candidates_for_all_files:
@@ -65,84 +65,86 @@ class TestTorrentRecovery(unittest.TestCase):
     ## testcase: test whether candidates put under the correct key
     ## testcase: single torrent case, candidates are searched
 
-    @mock.patch('FileFinder.os')
-    def setUp(self, mock_os):
+    def setUp(self):
         self.PathAndLength = namedtuple('PathAndLength', 'path length')
 
-        self.mock_fs_helper = MockFsHelper(mock_os)
-        self.mock_fs_helper.add_dir('a').add_dir('b1').add_files(['a.b1.f1', 'a.b1.f2']).end(123454)
-        self.mock_fs_helper.add_dir('b').add_dir('b1').add_files(['a.b1.f1']).end(123455)
-        self.mock_fs_helper.cache_in_filefinder()
+        temp_dir = TempDirectory()
+        self.temp_dir_path = temp_dir.path
+        temp_dir.write('a/b1/a.b1.f1', ContentManager.generate_random_binary(123454).getvalue())
+        temp_dir.write('a/b1/a.b1.f2', ContentManager.generate_random_binary(123454).getvalue())
+        temp_dir.write('b/b2/b.b2.f1', ContentManager.generate_random_binary(123455).getvalue())
+        self.file_finder = FileFinder()
+        self.file_finder.cache_files_by_size([temp_dir.path])
 
     def tearDown(self):
-        MockFileStore.deinit()
+        pass
 
     def test_find_candidates_for_all_files(self):
         paths = [self.PathAndLength('path1', 123454), self.PathAndLength('path2', 123455)]
         mock_torrent = MockTorrentFile('name', paths, 2500)
-        generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, None, None)
+        generator = Generator(mock_torrent.meta_info, self.file_finder, DUMMY_MEDIA_DIR, DUMMY_DEST_DIR)
 
         self.assertEqual(2, len(generator.candidates.keys()))
-        self.assertListEqual([os.path.join('a', 'b1', 'a.b1.f1'), os.path.join('a', 'b1', 'a.b1.f2')],
+        self.assertListEqual([os.path.join(self.temp_dir_path, 'a', 'b1', 'a.b1.f1'),
+                              os.path.join(self.temp_dir_path, 'a', 'b1', 'a.b1.f2')],
                              generator.candidates['path1'])
-        self.assertListEqual([os.path.join('b', 'b1', 'a.b1.f1')], generator.candidates['path2'])
+        self.assertListEqual([os.path.join(self.temp_dir_path, 'b', 'b2', 'b.b2.f1')], generator.candidates['path2'])
 
-    @mock.patch('FileFinder.os')
-    def test_find_candidates_for_all_files_skips_unwanted_exts(self, mock_os):
-        self.mock_fs_helper = MockFsHelper(mock_os)
-        self.mock_fs_helper.add_dir('a').add_dir('b1').add_files(['a.b1.f1', 'a.b1.f2']).end(123454)
-        self.mock_fs_helper.add_dir('b').add_dir('b1').add_files(['a.b1.f1']).end(123455)
-        self.mock_fs_helper.add_dir('c').add_dir('c1').add_files(['c.c1.f1.nfo', 'c.c1.f2.txt']).end(12)
-        self.mock_fs_helper.cache_in_filefinder()
+    @tempdir()
+    def test_find_candidates_for_all_files_skips_unwanted_exts(self, temp_dir):
+        temp_dir.write('c/c1/c.c1.f1.nfo', ContentManager.generate_random_binary(12).getvalue())
+        temp_dir.write('c/c1/c.c1.f2.txt', ContentManager.generate_random_binary(12).getvalue())
 
-        paths = [self.PathAndLength('path1', 123454), self.PathAndLength('path2', 123455),
-                 self.PathAndLength('path.txt', 12), self.PathAndLength('path.nfo', 12)]
+        self.file_finder.cache_files_by_size([temp_dir.path])
+
+        paths = [self.PathAndLength('path1', 123454),
+                 self.PathAndLength('path2', 123455),
+                 self.PathAndLength('path.txt', 12),
+                 self.PathAndLength('path.nfo', 12)]
         mock_torrent = MockTorrentFile('name', paths, 2500)
 
-        generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, None, None)
+        generator = Generator(mock_torrent.meta_info, self.file_finder, DUMMY_MEDIA_DIR, DUMMY_DEST_DIR)
 
         self.assertEqual(2, len(generator.candidates.keys()))
-        self.assertListEqual([os.path.join('a', 'b1', 'a.b1.f1'), os.path.join('a', 'b1', 'a.b1.f2')],
+        self.assertListEqual([os.path.join(self.temp_dir_path, 'a', 'b1', 'a.b1.f1'),
+                              os.path.join(self.temp_dir_path, 'a', 'b1', 'a.b1.f2')],
                              generator.candidates['path1'])
-        self.assertListEqual([os.path.join('b', 'b1', 'a.b1.f1')], generator.candidates['path2'])
+        self.assertListEqual([os.path.join(self.temp_dir_path, 'b', 'b2', 'b.b2.f1')], generator.candidates['path2'])
 
-    @mock.patch('FileFinder.os')
-    def test_last_skipped_number_of_pieces_set_if_no_candidates_are_found(self, mock_os):
-        self.mock_fs_helper = MockFsHelper(mock_os)
+
+    def test_last_skipped_number_of_pieces_set_if_no_candidates_are_found(self):
         lengths = [123454, 123789]
         paths = [self.PathAndLength('path1', lengths[0]), self.PathAndLength('path2', lengths[1])]
         mock_torrent = MockTorrentFile('name', paths, PIECE_LENGTH)
 
-        generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, None, None)
+        generator = Generator(mock_torrent.meta_info, self.file_finder, DUMMY_MEDIA_DIR, DUMMY_DEST_DIR)
         numbered = enumerate(generator.pieces_generator())
         for i, piece in numbered:
             pass
 
         self.assertEqual(sum(lengths), generator.actual_pos)
-        self.assertEqual(sum(lengths), generator.last_file_marker)
+        self.assertEqual(123789, generator.last_file_marker)
 
-    @mock.patch('FileFinder.os')
-    def test_generate_random_data(self, mock_os):
+    @tempdir()
+    def test_generate_random_data(self, temp_dir):
         lengths = [123454, 123789]
-        self.mock_fs_helper = MockFsHelper(mock_os)
-        self.mock_fs_helper.add_dir('a').add_dir('b1').add_files(['a.b1.f1', 'a.b1.f2']).end(lengths[0])
-        self.mock_fs_helper.add_dir('b').add_dir('b1').add_files(['a.b1.f1']).end(lengths[1])
-        self.mock_fs_helper.add_dir('c').add_dir('c1').add_files(['c.c1.f1.nfo', 'c.c1.f2.txt']).end(12)
-        self.mock_fs_helper.cache_in_filefinder()
+
+        temp_dir.write('b/b1/b.b1.f1', ContentManager.generate_random_binary(1).getvalue())
+        temp_dir.write('c/c1/c.c1.f1.nfo', ContentManager.generate_random_binary(12).getvalue())
+        temp_dir.write('c/c1/c.c1.f2.txt', ContentManager.generate_random_binary(12).getvalue())
+
+        self.file_finder.cache_files_by_size([temp_dir.path])
+
         paths = [self.PathAndLength('path1', lengths[0]), self.PathAndLength('path2', lengths[1])]
         mock_torrent = MockTorrentFile('name', paths, PIECE_LENGTH)
 
-        valid_files = {'path1': [MockFile(os.path.join('a', 'b1', 'a.b1.f1'))]
-            , 'path2': [MockFile(os.path.join('b', 'b1', 'a.b1.f1'))]}
-        content_manager = ContentManager(self.mock_fs_helper, valid_files)
-        generator_module = sys.modules[Generator.__module__]
-        with patch.object(generator_module, 'open', OPEN_MOCK, create=True):
-            generator = Generator(mock_torrent.meta_info, self.mock_fs_helper.filefinder, DUMMY_MEDIA_DIR,
-                                  DUMMY_DEST_DIR)
+        generator = Generator(mock_torrent.meta_info, self.file_finder, DUMMY_MEDIA_DIR,
+                              DUMMY_DEST_DIR)
 
-            numbered = enumerate(generator.pieces_generator())
-            for i, piece in numbered:
-                pass
+        numbered = enumerate(generator.pieces_generator())
+        for i, piece in numbered:
+            pass
 
-            self.assertEqual(sum(lengths), generator.actual_pos)
-            self.assertEqual(123454, generator.last_file_marker)
+        #123454 has one candidate, 123789 has 0 -->last_file_marker should be the 123789
+        self.assertEqual(sum(lengths), generator.actual_pos)
+        self.assertEqual(123789, generator.last_file_marker)
