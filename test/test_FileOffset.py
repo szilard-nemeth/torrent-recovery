@@ -113,3 +113,19 @@ class TestFileOffset(unittest.TestCase):
         self.assertEqual((0, 122), generator.offsets[0])
         self.assertEqual((offset2_start, offset2_start + 123), generator.offsets[1])
         self.assertEqual((offset3_start, offset3_end), generator.offsets[2])
+
+    @tempdir()
+    def test_two_consecutive_not_wanted_files_present_and_nothing_else(self, temp_dir):
+        temp_dir.write('a/b1/a.b1.sfv', ContentManager.generate_random_binary(1).getvalue())
+        temp_dir.write('a/b1/a.b1.nfo', ContentManager.generate_random_binary(2).getvalue())
+
+        self.file_finder.cache_files_by_size([temp_dir.path])
+
+        paths = [self.PathAndLength('shouldskip1.sfv', 1000),
+                 self.PathAndLength('shouldskip2.nfo', 2000)]
+
+        mock_torrent = MockTorrentFile('name', paths, 123)
+
+        generator = Generator(mock_torrent.meta_info, self.file_finder, None, None)
+        self.assertEqual(1, len(generator.offsets))
+        self.assertEqual((0, 3000), generator.offsets[0])
