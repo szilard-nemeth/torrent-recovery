@@ -27,31 +27,31 @@ class TestTorrentRecovery(unittest.TestCase):
         parser = TorrentRecovery.setup_parser()
         self.args_dict = TorrentRecovery.create_args_dict(parser)
 
-        # ##open_torrentfile tests
-        # # TC 1: skip the loop if torrent corrupted
+        ## open_torrentfile tests
+        ## TC 1: skip the loop if torrent corrupted
         ## TC 2: seeks back to last file pos if piece_hash doesn't match
         ## TC 3: test running sum calculated correctly, incremented every time it's needed
         ## TC 4: only 2 file, second is unwanted, what happens?
         ## TC 5: only 1 file, unwanted, doesn't skipped from offsets (last if checks this)
 
-        # ##GENERATOR, pieces_generator
+        ## GENERATOR, pieces_generator
         ## TC 6: do not process skippable files,
-        #check that the next valid file's hash compared to the right portion of hash
-        #pieces should seek with sum of length of the skipped files
+        ## check that the next valid file's hash compared to the right portion of hash
+        ## pieces should seek with sum of length of the skipped files
 
         ## TC 7: given one file without any valid candidates
-        # compute seek should be called -->last number of skipped pieces should be set to ???
-        # actual pos should be incremented with length
-        # last file marker should be incremented with length
+        ## compute seek should be called -->last number of skipped pieces should be set to ???
+        ## actual pos should be incremented with length
+        ## last file marker should be incremented with length
 
         ## TC 8: self.new_candidate sets to true on every new candidate
         ## TC 9: if candidate is corrupted and it is the last candidate, self.torrent_corrupted sets to true
         ## TC 10: if candidate is corrupted and it is the last candidate, self.torrent_corrupted sets to false
-        #self.actual_pos should contain the value of self.last_file_marker
+        ## self.actual_pos should contain the value of self.last_file_marker
         ## TC 11: always compute seek while processing candidates
         ## TC 12: storing last valid file piece in case of we're at the end of the file
 
-        # TC 13 def test_does_not_process_files_should_skip(self):
+        ## TC 13 def test_does_not_process_files_should_skip(self):
 
 
         ###GENERATOR, find_candidates_for_all_files:
