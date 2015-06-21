@@ -1,3 +1,5 @@
+from test.testhelpers.content_manager import ContentManager
+
 __author__ = 'szyszy'
 
 # ##SINGLE FILE TORRENT EXAMPLE
@@ -29,15 +31,14 @@ __author__ = 'szyszy'
 #  'pieces': '\xae\xfa\x1a4t\x83\xf8=S"E"\xefa\x19\xb8#\x94\xf8p\x8e(bW@@>\xbb\xc1<\.......
 #  'private': 1}
 class MockTorrentFile:
-    def __init__(self, name, filenames_and_lengths, piece_length, mock_fs=None):
-        self.meta_info = self.create_meta_info(name, filenames_and_lengths, piece_length)
-        self.mock_fs = mock_fs
+    def __init__(self, name, filenames_and_lengths, piece_length, real_filepaths=None):
+        self.meta_info = self.create_meta_info(name, filenames_and_lengths, piece_length, real_filepaths=real_filepaths)
 
-    def create_meta_info(self, name, filenames_and_lengths, piece_length):
+    def create_meta_info(self, name, filenames_and_lengths, piece_length, real_filepaths=None):
         result = dict()
         result['name'] = name
         result['piece length'] = piece_length
-        result['pieces'] = self.generate_pieces()
+        result['pieces'] = self.generate_pieces(piece_length, real_filepaths=None)
 
         if len(filenames_and_lengths) == 1:
             result['length'] = filenames_and_lengths[0].length
@@ -50,5 +51,8 @@ class MockTorrentFile:
                 result['files'].append(d)
         return result
 
-    def generate_pieces(self):
-        pass
+    def generate_pieces(self, piece_length, real_filepaths):
+        if real_filepaths == None:
+            pass
+        else:
+            return ContentManager.generate_hash_from_files(real_filepaths)
