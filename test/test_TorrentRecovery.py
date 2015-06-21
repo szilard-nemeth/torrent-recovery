@@ -3,6 +3,7 @@ from testfixtures import tempdir, TempDirectory
 
 from FileFinder import FileFinder
 from Generator import Generator
+from test.testhelpers.TestTorrentDataProvider import TestTorrentDataProvider
 from test.testhelpers.content_manager import ContentManager
 
 
@@ -27,8 +28,7 @@ class TestTorrentRecovery(unittest.TestCase):
         parser = TorrentRecovery.setup_parser()
         self.args_dict = TorrentRecovery.create_args_dict(parser)
 
-        ## open_torrentfile tests
-        ## TC 1: skip the loop if torrent corrupted
+        # # open_torrentfile tests
         ## TC 2: seeks back to last file pos if piece_hash doesn't match
         ## TC 3: test running sum calculated correctly, incremented every time it's needed
         ## TC 4: only 2 file, second is unwanted, what happens?
@@ -151,8 +151,7 @@ class TestTorrentRecovery(unittest.TestCase):
         length_of_valid_file = 567
         temp_dir.write(filepaths[0], ContentManager.generate_seq_data(10).getvalue())
         temp_dir.write(filepaths[1], ContentManager.generate_seq_data(20).getvalue())
-        temp_dir.write(filepaths[2], ContentManager.generate_seq_data(567).getvalue())
-
+        temp_dir.write(filepaths[2], ContentManager.generate_seq_data(length_of_valid_file).getvalue())
 
         self.file_finder.cache_files_by_size([temp_dir.path])
 
@@ -182,5 +181,27 @@ class TestTorrentRecovery(unittest.TestCase):
         self.assertEqual(len(file_pieces), len(actual_pieces))
         self.assertListEqual(file_pieces, actual_pieces)
 
+    @tempdir()
+    def test_skip_the_loop_if_torrent_corrupted(self, temp_dir):
+        piece_length = 32
+        length_of_valid_file = 567
+        filepaths = ['c/c1/c.c1.f1.nfo', 'a/a1/a.a1.f1.mp3']
+        temp_dir.write(filepaths[0], ContentManager.generate_seq_data(10).getvalue())
+        temp_dir.write(filepaths[0], ContentManager.generate_seq_data(length_of_valid_file).getvalue())
 
+
+        paths = [self.PathAndLength('f1.nfo', 10),
+                 self.PathAndLength('f1.mp3', length_of_valid_file)]
+        filepaths = [os.path.abspath(os.path.join(temp_dir.path, fp)) for fp in filepaths]
+
+        mock_torrent = MockTorrentFile('name', paths, piece_length, real_filepaths=filepaths)
+        test_torrent_data_provider = TestTorrentDataProvider([mock_torrent])
+
+        #intentionally make content corrupt after mock torrent pieces hash is created!
+        ContentManager.write_random_value_to_file(filepaths[0])
+
+        recovery = TorrentRecovery([temp_dir.path], DUMMY_DEST_DIR, test_torrent_data_provider)
+        recovery.start()
+
+        self.assertTrue(recovery.generator.torrent_corrupted)
 

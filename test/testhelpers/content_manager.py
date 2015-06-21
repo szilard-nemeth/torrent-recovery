@@ -1,5 +1,6 @@
 import hashlib
 import os
+import random
 import string
 
 __author__ = 'szyszy'
@@ -44,7 +45,10 @@ class ContentManager:
         f.seek(from_pos)
 
         length_to_read = to_pos - from_pos
-        return f.read(length_to_read)
+        content = f.read(length_to_read)
+        f.close()
+
+        return content
 
     @staticmethod
     def get_file_positions(length_of_file, piece_length, initial_seek=0):
@@ -68,3 +72,12 @@ class ContentManager:
             positions.append((from_pos, to_pos))
 
         return positions
+
+    @staticmethod
+    def write_random_value_to_file(filepath):
+        f = open(filepath, 'r+')
+        try:
+            f.seek(random.randint(1, 200))
+            f.write(os.urandom(12))
+        finally:
+            f.close()

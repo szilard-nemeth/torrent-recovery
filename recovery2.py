@@ -6,66 +6,57 @@ import bencode
 import pprint
 import argparse
 import logging
+import DefaultTorrentDataProvider
 from FileFinder import FileFinder
 from Generator import Generator
 
 
 class TorrentRecovery:
-    def __init__(self, media_dirs, torrentfiles_dir, dest_dir):
+    def __init__(self, media_dirs, dest_dir, torrent_data_provider):
         self.log = logging.getLogger('torrent_recovery')
         self.media_dirs = media_dirs
-        self.torrentfiles_dir = torrentfiles_dir
         self.dest_dir = dest_dir
-        self.torrentfiles_list = FileFinder.find_torrent_files(self.torrentfiles_dir)
-        self.log.info('Found %d torrent files in %s', len(self.torrentfiles_list), self.torrentfiles_dir)
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug('torrentfiles: %s', pprint.pformat(self.torrentfiles_list))
-        self.start()
+        self.torrent_data_provider = torrent_data_provider
+        self.fileFinder = FileFinder()
 
     def start(self):
         self.log.info('Starting to cache files by size....')
-        self.fileFinder = FileFinder()
         self.fileFinder.cache_files_by_size(self.media_dirs)
 
-        torrenfiles_size = len(self.torrentfiles_list)
-        for idx, file in enumerate(self.torrentfiles_list):
-            self.log.info('processing %d out of %d, file: %s', idx + 1, torrenfiles_size, file)
+        for idx, info in enumerate(self.torrent_data_provider.generator()):
+            self.log.info('processing %d out of %d, file: %s', idx + 1, self.torrent_data_provider.get_file_count(), file)
             self.log.info('===============================================')
-            self.open_torrentfile(file)
+            self.process_torrent(info)
             self.log.info('===============================================')
 
-    def open_torrentfile(self, file):
-        # Open torrent file
-        torrent_file = open(file, "rb")
-        metainfo = bencode.bdecode(torrent_file.read())
-        info = metainfo['info']
+    def process_torrent(self, info):
         if self.log.isEnabledFor(logging.DEBUG):
             self.log.debug('metainfo: %s', pprint.pformat(info))
 
-        generator = Generator(info, self.fileFinder, self.media_dirs, self.dest_dir)
+        self.generator = Generator(info, self.fileFinder, self.media_dirs, self.dest_dir)
         pieces = StringIO.StringIO(info['pieces'])
 
         # Iterate through pieces
         last_file_pos = 0
-        for piece in generator.pieces_generator():
-            if generator.torrent_corrupted:
+        for piece in self.generator.pieces_generator():
+            if self.generator.torrent_corrupted:
                 self.log.warning('torrent corrupted: %s', info['name'])
                 break
             # Compare piece hash with expected hash
             piece_hash = hashlib.sha1(piece).digest()
-            #seek the offset (skip unwanted files)
-            if generator.new_candidate:
+            # seek the offset (skip unwanted files)
+            if self.generator.new_candidate:
                 #save the actual position of pieces corresponding to the
                 #0th byte of any relevant file
                 last_file_pos = pieces.tell()
-            pieces.seek(generator.get_last_number_of_skipped_pieces() * 20, os.SEEK_CUR)
+            pieces.seek(self.generator.get_last_number_of_skipped_pieces() * 20, os.SEEK_CUR)
 
             if piece_hash != pieces.read(20):
-                generator.corruption()
+                self.generator.corruption()
                 pieces.seek(last_file_pos)
         # ensure we've read all pieces
         if pieces.read():
-            generator.corruption()
+            self.generator.corruption()
 
     @staticmethod
     def setup_parser():
@@ -117,6 +108,7 @@ class TorrentRecovery:
         # add the handlers to the logger
         logger.addHandler(fh)
         logger.addHandler(ch)
+        return logger
 
 
 def check_file(file):
@@ -129,12 +121,21 @@ def main():
     arg_parser = TorrentRecovery.setup_parser()
     argsDict = TorrentRecovery.create_args_dict(arg_parser)
     verbose = True if 'verbose' in argsDict else False
-    TorrentRecovery.init_logger(verbose)
+    logger = TorrentRecovery.init_logger(verbose)
 
     media_dirs = argsDict['media_dirs']
     torrentfiles_dir = argsDict['torrent_files_dir']
     destination_dir = argsDict['destination_dir']
-    recovery = TorrentRecovery(media_dirs, torrentfiles_dir, destination_dir)
+
+    torrentfiles_list = FileFinder.find_torrent_files(torrentfiles_dir)
+    logger.info('Found %d torrent files in %s', len(torrentfiles_list), torrentfiles_dir)
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug('torrentfiles: %s', pprint.pformat(torrentfiles_list))
+
+    torrent_provider = DefaultTorrentDataProvider(torrentfiles_list)
+
+    recovery = TorrentRecovery(media_dirs, destination_dir, torrent_provider)
+    recovery.start()
 
 
 if __name__ == "__main__":
