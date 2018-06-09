@@ -106,7 +106,7 @@ class Generator:
 
                         yield piece
                         self.new_candidate = False
-                        #do not delete the remainder piece when candidate was corrupt (next file may need this piece)
+                        #TODO do not delete the remainder piece when candidate was corrupt (next file may need this piece)
                         #delete only when candidate is still not corrupt OR torrent is corrupt (next torrent don't want this piece)
                         #if (not self.candidate_corrupted):# or self.torrent_corrupted:
                         piece = ""
@@ -121,6 +121,7 @@ class Generator:
             if piece != "":
                 yield piece
                 self.new_candidate = False
+
         else:  # yield pieces from a single file torrent
             candidates = self.candidates[self.metainfo['name']]
             for candidate in candidates:
